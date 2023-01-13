@@ -1,7 +1,12 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
+import {
+  HttpClient,
+  HttpHeaders,
+  HttpParams,
+  HttpEventType,
+} from '@angular/common/http';
 import { Post } from './post.model';
-import { map, Subject, catchError, throwError } from 'rxjs';
+import { map, Subject, catchError, throwError, tap } from 'rxjs';
 
 @Injectable({ providedIn: 'root' })
 export class PostsService {
@@ -15,7 +20,10 @@ export class PostsService {
     this.http
       .post<{ name: string }>(
         'https://project-start-a7597-default-rtdb.firebaseio.com/posts.json',
-        postData
+        postData,
+        {
+          observe: 'response',
+        }
       )
       .subscribe(
         (responseData) => {
@@ -28,9 +36,17 @@ export class PostsService {
   }
 
   fetchPosts() {
+    let searchParams = new HttpParams();
+    searchParams = searchParams.append('print', 'pretty');
+    searchParams = searchParams.append('custom', 'key');
     return this.http
       .get<{ [key: string]: Post }>(
-        'https://project-start-a7597-default-rtdb.firebaseio.com/posts.json'
+        'https://project-start-a7597-default-rtdb.firebaseio.com/posts.json',
+        {
+          headers: new HttpHeaders({ 'Custom-Header': 'Hello' }),
+          params: searchParams,
+          responseType: 'json',
+        }
       )
       .pipe(
         map((responseData) => {
@@ -50,8 +66,24 @@ export class PostsService {
   }
 
   deletePosts() {
-    return this.http.delete(
-      'https://project-start-a7597-default-rtdb.firebaseio.com/posts.json'
-    );
+    return this.http
+      .delete(
+        'https://project-start-a7597-default-rtdb.firebaseio.com/posts.json',
+        {
+          observe: 'events',
+          responseType: 'text',
+        }
+      )
+      .pipe(
+        tap((event) => {
+          console.log(event);
+          if (event.type === HttpEventType.Sent) {
+            //...
+          }
+          if (event.type === HttpEventType.Response) {
+            console.log(event.body);
+          }
+        })
+      );
   }
 }
